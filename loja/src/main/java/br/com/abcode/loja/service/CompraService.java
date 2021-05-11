@@ -1,25 +1,35 @@
 package br.com.abcode.loja.service;
 
+import br.com.abcode.loja.client.FornecedorClient;
 import br.com.abcode.loja.controller.dto.CompraDTO;
 import br.com.abcode.loja.controller.dto.InfoFornecedorDTO;
+import br.com.abcode.loja.controller.dto.InfoPedidoDTO;
+import br.com.abcode.loja.model.Compra;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 @Service
 public class CompraService {
 
     @Autowired
-    private RestTemplate client;
+    private FornecedorClient fornecedorClient;
 
 
-    public void realizaCompra(CompraDTO compra) {
-        ResponseEntity<InfoFornecedorDTO> exchange =
-                client.exchange("http://fornecedor/info/" + compra.getEndereco().getEstado()
-                        , HttpMethod.GET, null, InfoFornecedorDTO.class);
+    public Compra realizaCompra(CompraDTO compra) {
 
-        System.out.println(exchange.getBody().getEndereco());
+        final String estado = compra.getEndereco().getEstado();
+
+        InfoFornecedorDTO info = fornecedorClient.getInfoPorEstado(estado);
+
+        InfoPedidoDTO infoPedido = fornecedorClient.realizaPedido(compra.getItens());
+
+        Compra compraSalva = new Compra();
+        compraSalva.setPedidoId(infoPedido.getId());
+        compraSalva.setTempoDePreparo(infoPedido.getTempoDePreparo());
+        compraSalva.setEnderecoDestino(info.getEndereco());
+
+        System.out.println(info.getEndereco());
+
+        return compraSalva;
     }
 }
